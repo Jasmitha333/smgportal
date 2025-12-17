@@ -3,13 +3,13 @@ import { motion } from 'motion/react';
 import { Lock, Mail, ArrowRight, Building2, Users, Shield, Eye, EyeOff } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (role: 'employee' | 'admin') => void;
+  onLogin: (role: 'employee' | 'admin' | 'superadmin') => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'employee' | 'admin'>('employee');
+  const [selectedRole, setSelectedRole] = useState<'employee' | 'admin' | 'superadmin'>('employee');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -36,6 +36,12 @@ export function Login({ onLogin }: LoginProps) {
       label: 'Admin Portal',
       icon: Shield,
       description: 'Manage department operations'
+    },
+    {
+      id: 'superadmin' as const,
+      label: 'Super Admin',
+      icon: Building2,
+      description: 'Company-wide settings & analytics'
     }
   ];
 
@@ -105,30 +111,33 @@ export function Login({ onLogin }: LoginProps) {
             transition={{ delay: 0.3, duration: 0.6 }}
           >
             <div className="grid grid-cols-2 gap-4">
-              {roles.map((role, index) => (
-                <motion.button
-                  key={role.id}
-                  type="button"
-                  onClick={() => setSelectedRole(role.id)}
-                  className={`p-4 rounded-2xl border-2 transition-all ${
-                    selectedRole === role.id
-                      ? 'border-[#0B4DA2] bg-[#0B4DA2] text-white shadow-lg shadow-blue-200'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-[#87CEEB]'
-                  }`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <div className="text-sm">{role.label}</div>
-                  <div className={`text-xs mt-1 ${
-                    selectedRole === role.id ? 'text-blue-100' : 'text-gray-500'
-                  }`}>
-                    {role.description}
-                  </div>
-                </motion.button>
-              ))}
+              {roles.map((role, index) => {
+                const extraLayout = role.id === 'superadmin' ? 'col-span-2 justify-self-center w-2/3' : '';
+                return (
+                  <motion.button
+                    key={role.id}
+                    type="button"
+                    onClick={() => setSelectedRole(role.id)}
+                    className={`p-4 rounded-2xl border-2 transition-all ${
+                      selectedRole === role.id
+                        ? 'border-[#0B4DA2] bg-[#0B4DA2] text-white shadow-lg shadow-blue-200'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-[#87CEEB]'
+                    } ${extraLayout}`}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <div className="text-sm text-center">{role.label}</div>
+                    <div className={`text-xs mt-1 text-center ${
+                      selectedRole === role.id ? 'text-blue-100' : 'text-gray-500'
+                    }`}>
+                      {role.description}
+                    </div>
+                  </motion.button>
+                );
+              })}
             </div>
           </motion.div>
 
@@ -302,7 +311,7 @@ export function Login({ onLogin }: LoginProps) {
                     Access your dashboard, submit requests, view documents, and manage your HR tasks seamlessly
                   </p>
                 </>
-              ) : (
+              ) : selectedRole === 'admin' ? (
                 <>
                   <h2 className="text-7xl mb-8 leading-tight tracking-tight drop-shadow-lg">
                     Admin Portal Access
@@ -315,6 +324,21 @@ export function Login({ onLogin }: LoginProps) {
                       return 'Good Evening! ';
                     })()}
                     Manage employees, review requests, oversee operations, and maintain organizational excellence
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-7xl mb-8 leading-tight tracking-tight drop-shadow-lg">
+                    Super Admin Portal
+                  </h2>
+                  <p className="text-3xl text-white/95 leading-relaxed drop-shadow-md px-8">
+                    {(() => {
+                      const hour = new Date().getHours();
+                      if (hour < 12) return 'Good Morning! ';
+                      if (hour < 18) return 'Good Afternoon! ';
+                      return 'Good Evening! ';
+                    })()}
+                    Configure workflows, manage departments, and view company-wide analytics
                   </p>
                 </>
               )}

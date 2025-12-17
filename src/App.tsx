@@ -72,8 +72,20 @@ import {
   Smartphone,
   FileText,
   User,
-  Clock
+  Clock,
+  BarChart3
 } from 'lucide-react';
+
+// Super Admin Pages
+import { SuperAdminDashboard } from './pages/superadmin/SuperAdminDashboard';
+import { SuperAdminUsersPage } from './pages/superadmin/SuperAdminUsersPage';
+import { SuperAdminRequestsPage } from './pages/superadmin/SuperAdminRequestsPage';
+import { SuperAdminAnalyticsPage } from './pages/superadmin/SuperAdminAnalyticsPage';
+import { SuperAdminNotificationsPage } from './pages/superadmin/SuperAdminNotificationsPage';
+import { SuperAdminAnnouncementsPage } from './pages/superadmin/SuperAdminAnnouncementsPage';
+import { SuperAdminDepartmentsPage } from './pages/superadmin/SuperAdminDepartmentsPage';
+import { SuperAdminSettingsPage } from './pages/superadmin/SuperAdminSettingsPage';
+import { SuperAdminReportsPage } from './pages/superadmin/SuperAdminReportsPage';
 
 const INITIAL_DATA = {
   user: {
@@ -394,17 +406,92 @@ const AdminSidebar = ({ activePage, onNavigate, onLogout }) => {
   );
 };
 
+// Super Admin Sidebar
+const SuperAdminSidebar = ({ activePage, onNavigate, onLogout }) => {
+  const menuGroups = [
+    {
+      title: 'SUPER ADMIN',
+      items: [
+        { id: 'super-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { id: 'super-users', icon: User, label: 'Users' },
+        { id: 'super-departments', icon: Settings, label: 'Departments' },
+        { id: 'super-requests', icon: FileText, label: 'All Requests' },
+        { id: 'super-analytics', icon: BarChart3, label: 'Analytics' },
+      ],
+    },
+    {
+      title: 'SYSTEM',
+      items: [
+        { id: 'super-announcements', icon: Megaphone, label: 'Announcements' },
+        { id: 'super-notifications', icon: Bell, label: 'Notifications' },
+        { id: 'super-settings', icon: Settings, label: 'Settings' },
+        { id: 'super-reports', icon: FolderOpen, label: 'Reports & Export' },
+      ],
+    },
+  ];
+
+  return (
+    <aside className="hidden lg:flex w-[80px] hover:w-[260px] bg-[#042A5B] flex-col h-screen fixed left-0 top-0 z-50 border-r border-[#0B4DA2]/30 transition-all duration-300 group shadow-2xl overflow-hidden">
+      <div className="p-6 border-b border-[#0B4DA2]/30 flex items-center gap-3 overflow-hidden whitespace-nowrap shrink-0">
+        <div className="w-8 h-8 bg-[#0B4DA2] rounded-xl flex items-center justify-center font-bold text-white shadow-lg shrink-0 text-sm">SMG</div>
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <h2 className="text-white font-bold tracking-wide text-sm">SMG Scooters</h2>
+          <p className="text-[10px] text-[#87CEEB] tracking-widest font-bold opacity-80">SUPER ADMIN</p>
+        </div>
+      </div>
+
+      <nav className="flex-1 px-3 py-6 space-y-6 overflow-y-auto scrollbar-hide">
+        {menuGroups.map((group, idx) => (
+          <div key={idx}>
+            <p className="px-3 text-[10px] font-bold text-[#87CEEB]/60 uppercase tracking-wider mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">{group.title}</p>
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                    activePage === item.id
+                      ? 'bg-[#0B4DA2] text-white shadow-lg'
+                      : 'text-[#87CEEB] hover:bg-[#0B4DA2]/20'
+                  }`}
+                >
+                  <div className="shrink-0 flex justify-center w-6">
+                    <item.icon size={20} />
+                  </div>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap text-sm font-bold flex-1 text-left">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="p-4 border-t border-[#0B4DA2]/30 shrink-0">
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#EE5D50] hover:bg-[#EE5D50]/10 transition-all duration-200 font-bold"
+        >
+          <div className="shrink-0 flex justify-center w-6"><LogOut size={20} /></div>
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">Sign Out</span>
+        </button>
+      </div>
+    </aside>
+  );
+};
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<'employee' | 'admin'>('employee');
+  const [userRole, setUserRole] = useState<'employee' | 'admin' | 'superadmin'>('employee');
   const [activePage, setActivePage] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleLogin = (role: 'employee' | 'admin') => {
+  const handleLogin = (role: 'employee' | 'admin' | 'superadmin') => {
     setUserRole(role);
     setIsLoggedIn(true);
     // Set initial page based on role
-    setActivePage(role === 'admin' ? 'admin-dashboard' : 'dashboard');
+    setActivePage(role === 'admin' ? 'admin-dashboard' : role === 'superadmin' ? 'super-dashboard' : 'dashboard');
   };
 
   const handleLogout = () => {
@@ -475,6 +562,17 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
       case 'admin-projects': return <AdminProjectsPage />;
       case 'admin-production': return <AdminProductionPage />;
       case 'admin-payroll': return <AdminPayrollPage />;
+
+      // Super Admin Pages
+      case 'super-dashboard': return <SuperAdminDashboard onNavigate={setActivePage} />;
+      case 'super-users': return <SuperAdminUsersPage />;
+      case 'super-requests': return <SuperAdminRequestsPage />;
+      case 'super-analytics': return <SuperAdminAnalyticsPage />;
+      case 'super-notifications': return <SuperAdminNotificationsPage />;
+      case 'super-announcements': return <SuperAdminAnnouncementsPage />;
+      case 'super-departments': return <SuperAdminDepartmentsPage />;
+      case 'super-settings': return <SuperAdminSettingsPage />;
+      case 'super-reports': return <SuperAdminReportsPage />;
       
       default: return (<div className="flex flex-col items-center justify-center h-[50vh] text-gray-400 animate-in fade-in"><Settings size={64} className="mb-4 text-[#0B4DA2] opacity-20" /><h2 className="text-xl font-bold text-[#1B254B]">Page Under Construction</h2><p className="text-sm text-[#A3AED0] mt-2">This page is being developed</p></div>);
     }
@@ -484,6 +582,8 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
     <div className="bg-[#F4F7FE] min-h-screen font-sans text-[#1B254B] selection:bg-[#0B4DA2] selection:text-white">
       {userRole === 'admin' ? (
         <AdminSidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
+      ) : userRole === 'superadmin' ? (
+        <SuperAdminSidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
       ) : (
         <Sidebar activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
       )}
