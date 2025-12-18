@@ -5,23 +5,15 @@ import * as TabsPrimitive from "@radix-ui/react-tabs@1.1.3";
 
 import { cn } from "./utils";
 
-function Tabs({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+function Tabs({ className, children, ...props }: React.ComponentProps<typeof TabsPrimitive.Root>) {
   return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
-    />
+    <TabsPrimitive.Root data-slot="tabs" className={cn("flex flex-col gap-2", className)} {...props}>
+      {children}
+    </TabsPrimitive.Root>
   );
 }
 
-function TabsList({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.List>) {
+function TabsList({ className, children, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
@@ -30,14 +22,13 @@ function TabsList({
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+    </TabsPrimitive.List>
   );
 }
 
-function TabsTrigger({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+function TabsTrigger({ className, children, ...props }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
@@ -46,20 +37,17 @@ function TabsTrigger({
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+    </TabsPrimitive.Trigger>
   );
 }
 
-function TabsContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+function TabsContent({ className, children, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>) {
   return (
-    <TabsPrimitive.Content
-      data-slot="tabs-content"
-      className={cn("flex-1 outline-none", className)}
-      {...props}
-    />
+    <TabsPrimitive.Content data-slot="tabs-content" className={cn("flex-1 outline-none", className)} {...props}>
+      {children}
+    </TabsPrimitive.Content>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppProvider } from './context/AppContextEnhanced';
 import { Login } from './components/Login';
 import { DashboardPage } from './pages/DashboardPage';
@@ -198,6 +198,96 @@ const INITIAL_DATA = {
 const Topbar = ({ user, onMobileMenu, onNavigate }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+  const [query, setQuery] = useState('');
+  const [openResults, setOpenResults] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [ddPos, setDdPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+
+  // Simple global search index mapping common labels to routes
+  const searchIndex: Array<{ label: string; route: string; keywords?: string[] }> = [
+    // Core pages
+    { label: 'Dashboard', route: 'dashboard', keywords: ['home'] },
+    { label: 'Projects', route: 'projects' },
+    { label: 'Profile', route: 'profile', keywords: ['my profile'] },
+    { label: 'Leaves', route: 'leaves' },
+    { label: 'Documents', route: 'documents', keywords: ['my documents'] },
+    { label: 'Training', route: 'training' },
+    { label: 'Payroll', route: 'payroll' },
+    { label: 'Canteen', route: 'canteen' },
+    { label: 'Guest House', route: 'guest-house' },
+    { label: 'Transport', route: 'transport' },
+    { label: 'Welfare', route: 'welfare' },
+    { label: 'Policies', route: 'policies' },
+    { label: 'Announcements', route: 'announcements' },
+    { label: 'Notifications', route: 'notifications' },
+
+    // Admin
+    { label: 'Admin Dashboard', route: 'admin-dashboard', keywords: ['admin'] },
+    { label: 'Manage Users', route: 'admin-users', keywords: ['users'] },
+    { label: 'Admin Requests', route: 'admin-requests', keywords: ['all requests'] },
+    { label: 'Admin Notifications', route: 'admin-notifications' },
+    { label: 'Department Analytics', route: 'admin-analytics', keywords: ['analytics'] },
+    { label: 'Admin Announcements', route: 'admin-announcements', keywords: ['announcements'] },
+    { label: 'Admin Projects', route: 'admin-projects', keywords: ['projects'] },
+    { label: 'Admin Production', route: 'admin-production', keywords: ['production'] },
+    { label: 'Admin Payroll', route: 'admin-payroll', keywords: ['payroll'] },
+
+    // Super Admin
+    { label: 'Super Dashboard', route: 'super-dashboard', keywords: ['super admin', 'superadmin'] },
+    { label: 'Super Manage Users', route: 'super-users', keywords: ['manage users', 'users'] },
+    { label: 'Departments', route: 'super-departments', keywords: ['department'] },
+    { label: 'All Requests', route: 'super-requests', keywords: ['requests'] },
+    { label: 'Analytics', route: 'super-analytics', keywords: ['analytics'] },
+    { label: 'Announcements', route: 'super-announcements', keywords: ['announcements'] },
+    { label: 'Notifications', route: 'super-notifications', keywords: ['notifications'] },
+    { label: 'System Settings', route: 'super-settings', keywords: ['settings', 'system'] },
+    { label: 'Reports & Export', route: 'super-reports', keywords: ['reports', 'export'] },
+  ];
+
+  const findMatches = (q: string) => {
+    const s = q.trim().toLowerCase();
+    if (!s) return [] as typeof searchIndex;
+    const score = (item: typeof searchIndex[number]) => {
+      const hay = [item.label, ...(item.keywords || [])].join(' ').toLowerCase();
+      if (hay.startsWith(s)) return 3;
+      if (hay.includes(s)) return 2;
+      // simple fuzzy: all chars present in order
+      let i = 0; for (const c of hay) if (c === s[i]) i++; return i >= Math.min(3, s.length) ? 1 : 0;
+    };
+    return searchIndex
+      .map((it) => ({ it, sc: score(it) }))
+      .filter((x) => x.sc > 0)
+      .sort((a, b) => b.sc - a.sc)
+      .slice(0, 6)
+      .map((x) => x.it);
+  };
+
+  const handleSubmit = () => {
+    const [best] = findMatches(query);
+    if (best) {
+      onNavigate(best.route);
+      setOpenResults(false);
+    }
+  };
+
+  const updateDropdownPosition = () => {
+    if (!inputRef.current) return;
+    const r = inputRef.current.getBoundingClientRect();
+    setDdPos({ top: r.bottom + 8 + window.scrollY, left: r.left + window.scrollX, width: r.width });
+  };
+
+  useEffect(() => {
+    if (!openResults) return;
+    updateDropdownPosition();
+    const onScroll = () => updateDropdownPosition();
+    const onResize = () => updateDropdownPosition();
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [openResults, query]);
 
   // Update clock every second
   useEffect(() => {
@@ -237,9 +327,39 @@ const Topbar = ({ user, onMobileMenu, onNavigate }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="hidden sm:flex items-center bg-white rounded-full px-4 py-2 shadow-sm w-64 border border-transparent hover:border-[#0B4DA2]/30 transition-colors focus-within:border-[#0B4DA2]/50 focus-within:ring-2 focus-within:ring-[#0B4DA2]/10">
+        <div className="hidden sm:flex items-center bg-white rounded-xl px-4 py-2 shadow-sm w-72 border border-transparent hover:border-[#0B4DA2]/30 transition-colors focus-within:border-[#0B4DA2]/50 focus-within:ring-2 focus-within:ring-[#0B4DA2]/10 relative">
           <Search size={16} className="text-gray-400" />
-          <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none text-sm ml-2 w-full text-[#1B254B] placeholder:text-gray-300" />
+          <input
+            type="text"
+            placeholder="Search pages, actions..."
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setOpenResults(true); }}
+            onFocus={() => setOpenResults(true)}
+            onBlur={() => setTimeout(() => setOpenResults(false), 120)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') setOpenResults(false); }}
+            className="bg-transparent border-none outline-none text-sm ml-2 w-full text-[#1B254B] placeholder:text-gray-300"
+            ref={inputRef}
+          />
+          {openResults && query && (
+            <div
+              className="fixed bg-white border border-gray-100 rounded-xl shadow-xl z-[1000] p-2"
+              style={{ top: ddPos.top, left: ddPos.left, width: ddPos.width }}
+            >
+              {findMatches(query).length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-500">No matches</div>
+              )}
+              {findMatches(query).map((m) => (
+                <button
+                  key={m.route}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { onNavigate(m.route); setOpenResults(false); }}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-blue-50 text-sm text-[#1B254B]"
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <button className="relative p-2.5 bg-white text-gray-400 hover:text-[#0B4DA2] rounded-full shadow-sm transition-colors group hover:shadow-md border border-gray-100" onClick={() => alert("Opening Mail...")} title="Work Mail">
           <Mail size={20} className="group-hover:rotate-12 transition-transform" />
