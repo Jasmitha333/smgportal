@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle, User, FileText, Upload, Phone, Mail, MapPin, Briefcase } from 'lucide-react';
+import { collection, addDoc, query, where, orderBy, getDocs, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../config/firebase';
+import { useAuth } from '../context/AuthContext';
 
 interface UserData {
   name: string;
@@ -15,6 +19,7 @@ interface UserData {
 }
 
 export const LeavesPage = () => {
+  const { user } = useAuth();
   const [showNewLeaveForm, setShowNewLeaveForm] = useState(false);
   const [leaveType, setLeaveType] = useState<'medical' | 'wfh'>('medical');
   const [fromDate, setFromDate] = useState('');
@@ -25,6 +30,8 @@ export const LeavesPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emailAccess, setEmailAccess] = useState<'yes' | 'no' | ''>('');
   const [confirmDeclaration, setConfirmDeclaration] = useState(false);
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Employee data
   const employee: UserData = {
@@ -51,7 +58,7 @@ export const LeavesPage = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!fromDate || !toDate || !reason) {
       alert('Please fill all required fields');
       return;
@@ -65,8 +72,68 @@ export const LeavesPage = () => {
       return;
     }
 
-    alert('Leave application submitted successfully!');
-    handleCancel();
+    if (!user) {
+      alert('User not authenticated');
+      return;
+    }
+
+    // Validate user has required fields
+    const userId = user.uid || user.id;
+    if (!userId) {
+      console.error('User object:', user);
+      alert('User ID not found. Please log out and log in again.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // File upload temporarily disabled
+      const documentUrl = '';
+
+      // Calculate days
+      const start = new Date(fromDate);
+      const end = new Date(toDate);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      // Create leave request in Firestore
+      const leaveData = {
+        requestType: 'leave',
+        title: `${leaveType === 'medical' ? 'Medical Leave' : 'Work From Home'} Request`,
+        description: reason,
+        userId: userId,
+        employeeId: user.employeeId || user.empId || 'N/A',
+        employeeName: user.name || user.fullName || user.email,
+        department: user.department || user.dept || 'N/A',
+        status: 'pending',
+        priority: 'medium',
+        requestData: {
+          leaveType: leaveType === 'medical' ? 'sick' : 'wfh',
+          startDate: new Date(fromDate),
+          endDate: new Date(toDate),
+          totalDays: days,
+          reason: reason,
+          phoneNumber: phoneNumber || user.phone || '',
+          emailAccess: emailAccess,
+          documentUrl: documentUrl
+        },
+        attachments: [],
+        approvers: [],
+        submittedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, 'requests'), leaveData);
+      
+      alert('✅ Leave application submitted successfully!');
+      handleCancel();
+      fetchLeaveRequests(); // Refresh the list
+    } catch (error) {
+      console.error('Error submitting leave:', error);
+      alert('❌ Failed to submit leave application. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -87,12 +154,45 @@ export const LeavesPage = () => {
     { type: 'Casual Leave', total: 8, used: 3, remaining: 5, color: '#FFB547' },
   ];
 
-  const leaveRequests = [
-    { id: 1, type: 'Annual Leave', from: '2024-12-20', to: '2024-12-24', days: 5, reason: 'Diwali Vacation', status: 'Approved', approver: 'Priya Sharma' },
-    { id: 2, type: 'Sick Leave', from: '2024-11-15', to: '2024-11-15', days: 1, reason: 'Fever', status: 'Approved', approver: 'Priya Sharma' },
-    { id: 3, type: 'Casual Leave', from: '2024-12-30', to: '2024-12-31', days: 2, reason: 'Personal Work', status: 'Pending', approver: 'Priya Sharma' },
-    { id: 4, type: 'Annual Leave', from: '2024-10-10', to: '2024-10-12', days: 3, reason: 'Family Function', status: 'Rejected', approver: 'Priya Sharma' },
-  ];
+  // Fetch leave requests from Firebase
+  const fetchLeaveRequests = async () => {
+    if (!user || !user.uid) {
+      console.log('⚠️ User not available yet, skipping fetch');
+      return;
+    }
+    
+    try {
+      const q = query(
+        collection(db, 'requests'),
+        where('userId', '==', user.uid),
+        where('requestType', '==', 'leave'),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const requests = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          type: data.requestData?.leaveType === 'sick' ? 'Medical Leave' : data.requestData?.leaveType === 'wfh' ? 'Work From Home' : 'Leave',
+          from: data.requestData?.startDate?.toDate?.()?.toISOString().split('T')[0] || '',
+          to: data.requestData?.endDate?.toDate?.()?.toISOString().split('T')[0] || '',
+          days: data.requestData?.totalDays || 0,
+          reason: data.description || '',
+          status: data.status.charAt(0).toUpperCase() + data.status.slice(1),
+          approver: data.approvers?.[0]?.name || 'Pending Assignment'
+        };
+      });
+      
+      setLeaveRequests(requests);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, [user]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -382,10 +482,10 @@ export const LeavesPage = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!fromDate || !toDate || !reason || !confirmDeclaration}
+                disabled={!fromDate || !toDate || !reason || !confirmDeclaration || loading}
                 className="px-8 py-2.5 bg-gradient-to-br from-[#042A5B] to-[#0B4DA2] text-white rounded-lg transition-all font-semibold shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
               >
-                Submit
+                {loading ? 'Submitting...' : 'Submit'}
               </button>
             </div>
           </div>

@@ -1,4 +1,8 @@
 import { Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from '../context/AuthContext';
 
 interface LeaveHistoryPageProps {
     user?: {
@@ -8,72 +12,66 @@ interface LeaveHistoryPageProps {
     onNavigate?: (page: string) => void;
 }
 
-export const LeaveHistoryPage = ({ user, onNavigate }: LeaveHistoryPageProps) => {
-    const leaveHistory = [
-        {
-            id: 1,
-            dateApplied: '05 Jan 2026',
-            fromTo: '08 Jan - 09 Jan 2026',
-            type: 'Medical Leave',
-            days: '2 Days',
-            reason: 'Fever & weakness',
-            status: 'Approved'
-        },
-        {
-            id: 2,
-            dateApplied: '30 Jan 2026',
-            fromTo: '25 Jan 2026',
-            type: 'Work From Home',
-            days: '1 Day',
-            reason: 'Network issue at PG',
-            status: 'Approved'
-        },
-        {
-            id: 3,
-            dateApplied: '28 Jan 2026',
-            fromTo: '29 Jan - 30 Jan 2026',
-            type: 'Medical Leave',
-            days: '2 Days',
-            reason: 'Cold & doctor visit',
-            status: 'Rejected'
-        },
-        {
-            id: 4,
-            dateApplied: '10 Feb 2026',
-            fromTo: '12 Feb 2026',
-            type: 'Work From Home',
-            days: '1 Day',
-            reason: 'Laptop repair technician visit',
-            status: 'Approved'
-        },
-        {
-            id: 5,
-            dateApplied: '25 Feb 2026',
-            fromTo: '26 Feb 2026',
-            type: 'Medical Leave',
-            days: '1 Day',
-            reason: 'Migraine',
-            status: 'Approved'
-        },
-        {
-            id: 6,
-            dateApplied: '05 Mar 2026',
-            fromTo: '06 Mar - 07 Mar 2026',
-            type: 'Work From Home',
-            days: '2 Days',
-            reason: 'Urgent family work',
-            status: 'Pending'
-        },
-        {
-            id: 7,
-            dateApplied: '14 Mar 2026',
-            fromTo: '16 Mar 2026',
-            type: 'Medical Leave',
-            days: '1 Day',
-            reason: 'Stomach infection',
-            status: 'Approved'
-        }
-    ];
+export const LeaveHistoryPage = ({ user: propUser, onNavigate }: LeaveHistoryPageProps) => {
+    const { user: authUser } = useAuth();
+    const user = propUser || authUser;
+    const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch leave history from Firebase
+    useEffect(() => {
+        const fetchLeaveHistory = async () => {
+            if (!authUser) {
+                console.log('⚠️ Auth user not available yet');
+                setLoading(false);
+                return;
+            }
+
+            const userId = authUser.uid || authUser.id;
+            if (!userId) {
+                console.error('User ID not found:', authUser);
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const q = query(
+                    collection(db, 'requests'),
+                    where('userId', '==', userId),
+                    where('requestType', '==', 'leave'),
+                    orderBy('createdAt', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                const history = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const startDate = data.requestData?.startDate?.toDate?.();
+                    const endDate = data.requestData?.endDate?.toDate?.();
+                    const createdAt = data.createdAt?.toDate?.();
+
+                    return {
+                        id: doc.id,
+                        dateApplied: createdAt ? createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
+                        fromTo: startDate && endDate 
+                            ? `${startDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} - ${endDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                            : 'N/A',
+                        type: data.requestData?.leaveType === 'sick' ? 'Medical Leave' : data.requestData?.leaveType === 'wfh' ? 'Work From Home' : 'Leave',
+                        days: `${data.requestData?.totalDays || 0} Day${data.requestData?.totalDays > 1 ? 's' : ''}`,
+                        reason: data.description || 'No reason provided',
+                        status: data.status.charAt(0).toUpperCase() + data.status.slice(1)
+                    };
+                });
+
+                setLeaveHistory(history);
+            } catch (error) {
+                console.error('Error fetching leave history:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLeaveHistory();
+    }, [authUser]);
 
     const approvedCount = leaveHistory.filter((l) => l.status === 'Approved').length;
     const rejectedCount = leaveHistory.filter((l) => l.status === 'Rejected').length;
@@ -179,7 +177,19 @@ export const LeaveHistoryPage = ({ user, onNavigate }: LeaveHistoryPageProps) =>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {leaveHistory.map((leave, index) => (
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                                Loading leave history...
+                                            </td>
+                                        </tr>
+                                    ) : leaveHistory.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                                No leave applications found. Apply your first leave!
+                                            </td>
+                                        </tr>
+                                    ) : leaveHistory.map((leave, index) => (
                                         <tr
                                             key={leave.id}
                                             className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
