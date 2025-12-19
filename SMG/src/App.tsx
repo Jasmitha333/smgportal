@@ -12,6 +12,8 @@ import { ProjectsPage } from './pages/ProjectsPageEnhanced';
 import { CanteenPage } from './pages/CanteenPage';
 import { GuestHousePage } from './pages/GuestHousePage';
 import { TransportPage } from './pages/TransportPage';
+import { ParkingFacilityPage } from './pages/ParkingFacilityPage';
+import { SportsClubPage } from './pages/SportsClubPage';
 import { LeavesPage } from './pages/LeavesPage';
 import { ResignationPage } from './pages/ResignationPage';
 import { LeaveHistoryPage } from './pages/LeaveHistoryPage';
@@ -467,6 +469,8 @@ function AppContent({ userRole, activePage, setActivePage, mobileMenuOpen, setMo
       case 'canteen': return <CanteenPage />;
       case 'guest-house': return <GuestHousePage />;
       case 'transport': return <TransportPage />;
+      case 'parking-facility': return <ParkingFacilityPage />;
+      case 'sports-club': return <SportsClubPage />;
       case 'uniform': return <UniformPage />;
       case 'sim-allocation': return <SIMAllocationPage />;
       case 'asset-requests': return <AssetRequestsPage />;

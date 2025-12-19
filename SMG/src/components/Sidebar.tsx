@@ -22,6 +22,7 @@ import {
   Coffee,
   Home,
   Bus,
+  Car,
   Shirt,
   Smartphone,
   Package,
@@ -32,7 +33,7 @@ import {
   Clock,
   LogOut,
   FilePlus,
-} from 'lucide-react';
+  Trophy
 } from 'lucide-react';
 
 interface MenuItem {
@@ -79,6 +80,12 @@ const navigationItems: MenuItem[] = [
     path: '/employee/payslips'
   },
   {
+    id: 'transport',
+    name: 'Transport',
+    icon: Bus,
+    path: '/employee/transport'
+  },
+  {
     id: 'my-request',
     name: 'My request',
     icon: Briefcase,
@@ -86,7 +93,8 @@ const navigationItems: MenuItem[] = [
       { id: 'service-catalog', name: 'Service Catalog', icon: ClipboardList, path: '/employee/service-catalog' },
       { id: 'canteen', name: 'Canteen', icon: Coffee, path: '/employee/canteen' },
       { id: 'guest-house', name: 'Guest House', icon: Home, path: '/employee/guest-house' },
-      { id: 'transport', name: 'Transport', icon: Bus, path: '/employee/transport' },
+      { id: 'parking-facility', name: 'Parking Facility', icon: Car, path: '/employee/parking-facility' },
+      { id: 'sports-club', name: 'Sports Club', icon: Trophy, path: '/employee/sports-club' },
       { id: 'uniform', name: 'Uniform', icon: Shirt, path: '/employee/uniform' },
       { id: 'sim-allocation', name: 'SIM Allocation', icon: Smartphone, path: '/employee/sim-allocation' },
       { id: 'asset-requests', name: 'Asset Requests', icon: Package, path: '/employee/asset-requests' },
@@ -237,19 +245,17 @@ export function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
                             exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.2 }}
                           >
-                            <NavLink
-                              to={subItem.path}
-                              className={({ isActive }) =>
-                                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${isActive
+                            <button
+                              onClick={() => onNavigate(subItem.id)}
+                              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm w-full ${activePage === subItem.id
                                   ? 'bg-white/20 text-white shadow-md'
                                   : 'text-white/70 hover:bg-white/5 hover:text-white'
-                                }`
-                              }
+                                }`}
                               aria-label={subItem.name}
                             >
                               <subItem.icon size={16} strokeWidth={2} />
                               <span>{subItem.name}</span>
-                            </NavLink>
+                            </button>
                           </motion.li>
                         ))}
                       </motion.ul>

@@ -117,6 +117,14 @@ interface AppContextType {
   requestTransport: (request: any) => void;
   cancelTransportRequest: (id: string) => void;
   
+  // Bus Facility
+  busRequests: any[];
+  requestBusFacility: (request: any) => void;
+  
+  // Parking Facility
+  parkingRequests: any[];
+  requestParkingFacility: (request: any) => void;
+  
   // Uniform
   uniformRequests: any[];
   requestUniform: (request: any) => void;
@@ -131,6 +139,7 @@ interface AppContextType {
   generatePayslip: (month: string) => void;
   
   // SIM Allocation
+  simRequests: any[];
   simCards: any[];
   requestSIM: (request: any) => void;
   
@@ -382,10 +391,95 @@ export const AppProvider = ({ children }) => {
     { id: 'TR002', from: 'Office', to: 'Client Site', date: '2024-12-20', time: '02:00 PM', passengers: 4, status: 'Pending', vehicleType: 'SUV' }
   ]);
   
+  // Bus Facility State
+  const [busRequests, setBusRequests] = useState([
+    {
+      id: 'BUS-REQ-001',
+      employeeId: DEMO_EMPLOYEE.empId,
+      employeeName: DEMO_EMPLOYEE.name,
+      houseNumber: 'B-204',
+      street: 'Green Valley Apartments',
+      landmark: 'Near Metro Station',
+      area: 'Sector 62',
+      city: 'Noida',
+      state: 'Uttar Pradesh',
+      pincode: '201301',
+      mobileNumber: '9876543210',
+      alternateNumber: '',
+      preferredPickupTime: '8:00 AM - 8:30 AM',
+      requestDate: '2024-12-05',
+      status: 'Active',
+      assignedRoute: 'Route A - Noida Sector 62',
+      pickupPoint: 'Sector 62, Near Metro Station',
+      pickupTime: '8:15 AM',
+      remarks: null
+    }
+  ]);
+  
+  // Parking Facility State
+  const [parkingRequests, setParkingRequests] = useState([
+    {
+      id: 'PARK-REQ-001',
+      employeeId: DEMO_EMPLOYEE.empId,
+      employeeName: DEMO_EMPLOYEE.name,
+      vehicleType: 'Four Wheeler',
+      vehicleNumber: 'DL01AB1234',
+      vehicleMake: 'Maruti',
+      vehicleModel: 'Swift',
+      vehicleColor: 'White',
+      fuelType: 'Petrol',
+      ownerName: '',
+      preferredSlot: 'Zone A - Main Building',
+      requestDate: '2024-12-08',
+      status: 'Slot Allocated',
+      slotNumber: 'A-42',
+      parkingZone: 'Zone A',
+      allocatedDate: '2024-12-10',
+      remarks: null
+    }
+  ]);
+  
   // Uniform State
   const [uniformRequests, setUniformRequests] = useState([
-    { id: 'UN001', items: [{ item: 'Shirt', size: 'L', quantity: 2 }, { item: 'Pants', size: '32', quantity: 2 }], requestDate: '2024-12-05', status: 'Delivered', deliveryDate: '2024-12-10' },
-    { id: 'UN002', items: [{ item: 'Safety Shoes', size: '9', quantity: 1 }], requestDate: '2024-12-12', status: 'Processing', deliveryDate: null }
+    {
+      id: 'UNI-REQ-001',
+      employeeId: DEMO_EMPLOYEE.empId,
+      employeeName: DEMO_EMPLOYEE.name,
+      department: DEMO_EMPLOYEE.department,
+      dateOfJoining: DEMO_EMPLOYEE.joiningDate,
+      uniformItems: [
+        { item: 'Work Shirt', size: 'L', quantity: 2 },
+        { item: 'Work Pants', waistSize: '32', quantity: 2 },
+        { item: 'Safety Shoes', shoeSize: '9', quantity: 1 }
+      ],
+      dateOfIssue: '2024-12-10',
+      requestDate: '2024-12-05',
+      status: 'Delivered',
+      deliveryDate: '2024-12-10',
+      approver: 'HR HOD',
+      approvedBy: 'Kavita Joshi',
+      approvedOn: '2024-12-06',
+      remarks: 'Standard issue uniform for assembly team'
+    },
+    {
+      id: 'UNI-REQ-002',
+      employeeId: DEMO_EMPLOYEE.empId,
+      employeeName: DEMO_EMPLOYEE.name,
+      department: DEMO_EMPLOYEE.department,
+      dateOfJoining: DEMO_EMPLOYEE.joiningDate,
+      uniformItems: [
+        { item: 'Safety Vest', size: 'XL', quantity: 1 },
+        { item: 'Safety Helmet', size: 'M', quantity: 1 }
+      ],
+      dateOfIssue: null,
+      requestDate: '2024-12-12',
+      status: 'Under Review',
+      deliveryDate: null,
+      approver: 'HR HOD',
+      approvedBy: null,
+      approvedOn: null,
+      remarks: null
+    }
   ]);
   
   // Assets State
@@ -407,7 +501,41 @@ export const AppProvider = ({ children }) => {
     { id: 'PS002', month: 'October 2024', basicSalary: '₹35,000', hra: '₹12,000', allowances: '₹8,000', deductions: '₹5,200', netSalary: '₹49,800', status: 'Available' }
   ]);
   
-  // SIM Cards State
+  // SIM Requests & Cards State
+  const [simRequests, setSimRequests] = useState([
+    {
+      id: 'SIM-REQ-001',
+      employeeId: DEMO_EMPLOYEE.empId,
+      employeeName: DEMO_EMPLOYEE.name,
+      simType: 'New SIM',
+      carrier: 'Airtel',
+      plan: 'Corporate Plan - Unlimited',
+      deviceType: 'Android',
+      reason: 'Field visits and customer calls',
+      status: 'Under Review',
+      submittedDate: '2024-12-10',
+      expectedBy: '2024-12-18',
+      approver: 'Admin Desk',
+      priority: 'High'
+    },
+    {
+      id: 'SIM-REQ-002',
+      employeeId: DEMO_EMPLOYEE.empId,
+      employeeName: DEMO_EMPLOYEE.name,
+      simType: 'Replacement',
+      carrier: 'Jio',
+      plan: '3GB/day + Unlimited Calls',
+      deviceType: 'iOS',
+      reason: 'Lost previous SIM during travel',
+      status: 'Approved',
+      submittedDate: '2024-12-05',
+      expectedBy: '2024-12-12',
+      approver: 'Admin Desk',
+      priority: 'Medium',
+      simId: 'SIM001'
+    }
+  ]);
+
   const [simCards, setSimCards] = useState([
     { id: 'SIM001', number: '+91 98765 99999', carrier: 'Airtel', plan: 'Corporate Plan - Unlimited', status: 'Active', assignedDate: '2020-02-01' }
   ]);
@@ -824,20 +952,109 @@ export const AppProvider = ({ children }) => {
     ));
   };
   
+  // Bus Facility Handlers
+  const requestBusFacility = (request) => {
+    const submittedDate = new Date().toISOString().split('T')[0];
+    
+    const newRequest = {
+      id: `BUS-REQ-${String(busRequests.length + 1).padStart(3, '0')}`,
+      employeeId: currentUser.empId,
+      employeeName: currentUser.name,
+      ...request,
+      requestDate: submittedDate,
+      status: 'Submitted',
+      assignedRoute: null,
+      pickupPoint: null,
+      pickupTime: null
+    };
+    
+    setBusRequests([newRequest, ...busRequests]);
+    
+    addRequest({
+      type: 'Bus Facility Request',
+      category: 'Transportation',
+      reason: `Bus request for ${request.area}, ${request.city}`,
+      priority: 'Medium'
+    });
+    
+    addNotification({
+      title: 'Bus Facility Request Submitted',
+      message: 'Your bus facility request has been sent to admin for route assignment',
+      type: 'success',
+      time: 'Just now'
+    });
+  };
+  
+  // Parking Facility Handlers
+  const requestParkingFacility = (request) => {
+    const submittedDate = new Date().toISOString().split('T')[0];
+    
+    const newRequest = {
+      id: `PARK-REQ-${String(parkingRequests.length + 1).padStart(3, '0')}`,
+      employeeId: currentUser.empId,
+      employeeName: currentUser.name,
+      ...request,
+      requestDate: submittedDate,
+      status: 'Submitted',
+      slotNumber: null,
+      parkingZone: null,
+      allocatedDate: null
+    };
+    
+    setParkingRequests([newRequest, ...parkingRequests]);
+    
+    addRequest({
+      type: 'Parking Facility Request',
+      category: request.vehicleType,
+      reason: `Parking request for ${request.vehicleNumber}`,
+      priority: 'Medium'
+    });
+    
+    addNotification({
+      title: 'Parking Request Submitted',
+      message: 'Your parking slot request has been sent to admin for allocation',
+      type: 'success',
+      time: 'Just now'
+    });
+  };
+  
   // Uniform Handlers
   const requestUniform = (request) => {
+    const submittedDate = new Date().toISOString().split('T')[0];
+    
     const newRequest = {
-      ...request,
-      id: `UN${String(uniformRequests.length + 1).padStart(3, '0')}`,
-      requestDate: new Date().toISOString().split('T')[0],
-      status: 'Processing',
-      deliveryDate: null
+      id: `UNI-REQ-${String(uniformRequests.length + 1).padStart(3, '0')}`,
+      employeeId: currentUser.empId,
+      employeeName: currentUser.name,
+      department: currentUser.department,
+      dateOfJoining: currentUser.joiningDate,
+      uniformItems: request.uniformItems || [],
+      dateOfIssue: request.dateOfIssue || null,
+      requestDate: submittedDate,
+      status: 'Submitted',
+      deliveryDate: null,
+      approver: 'HR HOD',
+      approvedBy: null,
+      approvedOn: null,
+      remarks: request.remarks || null
     };
+    
     setUniformRequests([newRequest, ...uniformRequests]);
+    
+    const itemsSummary = request.uniformItems?.map(item => 
+      `${item.quantity}x ${item.item} (Size: ${item.size || item.waistSize || item.shoeSize})`
+    ).join(', ') || 'Multiple items';
+    
+    addRequest({
+      type: 'Uniform Request',
+      category: 'Uniform Allocation',
+      reason: itemsSummary,
+      priority: 'Medium'
+    });
     
     addNotification({
       title: 'Uniform Request Submitted',
-      message: 'Your uniform request has been submitted',
+      message: 'Your uniform request has been sent to HR HOD for approval',
       type: 'success',
       time: 'Just now'
     });
@@ -878,11 +1095,40 @@ export const AppProvider = ({ children }) => {
   
   // SIM Handlers
   const requestSIM = (request) => {
-    addRequest({
-      type: 'SIM Card Request',
-      category: request.carrier || 'Corporate SIM',
+    const submittedDate = new Date().toISOString().split('T')[0];
+
+    const newSimRequest = {
+      id: `SIM-REQ-${String(simRequests.length + 1).padStart(3, '0')}`,
+      employeeId: currentUser.empId,
+      employeeName: currentUser.name,
+      simType: request.simType || 'New SIM',
+      carrier: request.carrier || 'Corporate SIM',
+      plan: request.plan || 'Standard Plan',
+      deviceType: request.deviceType || 'Not specified',
       reason: request.reason,
-      priority: 'Medium'
+      expectedBy: request.expectedBy || null,
+      status: 'Submitted',
+      submittedDate,
+      approver: 'Admin Desk',
+      priority: request.priority || 'Medium'
+    };
+
+    setSimRequests([newSimRequest, ...simRequests]);
+
+    addRequest({
+      type: 'SIM Request',
+      category: newSimRequest.simType,
+      reason: newSimRequest.reason,
+      priority: newSimRequest.priority,
+      carrier: newSimRequest.carrier,
+      plan: newSimRequest.plan
+    });
+
+    addNotification({
+      title: 'SIM request submitted',
+      message: `${newSimRequest.carrier} ${newSimRequest.plan} sent to Admin Desk`,
+      type: 'info',
+      time: 'Just now'
     });
   };
   
@@ -961,6 +1207,10 @@ export const AppProvider = ({ children }) => {
     transportRequests,
     requestTransport,
     cancelTransportRequest,
+    busRequests,
+    requestBusFacility,
+    parkingRequests,
+    requestParkingFacility,
     uniformRequests,
     requestUniform,
     myAssets,
@@ -969,6 +1219,7 @@ export const AppProvider = ({ children }) => {
     payslips,
     generatePayslip,
     simCards,
+    simRequests,
     requestSIM,
     generalRequests,
     submitGeneralRequest

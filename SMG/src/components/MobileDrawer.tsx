@@ -19,12 +19,14 @@ import {
   Coffee,
   Home,
   Bus,
+  Car,
   Shirt,
   Smartphone,
   Package,
   ClipboardList,
   CalendarCheck,
   Eye,
+  Trophy
 } from 'lucide-react';
 
 interface MenuItem {
@@ -48,14 +50,21 @@ const navigationItems: MenuItem[] = [
     path: '/employee/dashboard' 
   },
   {
-    id: 'projects',
-    name: 'Projects & Work',
+    id: 'transport',
+    name: 'Transport',
+    icon: Bus,
+    path: '/employee/transport'
+  },
+  {
+    id: 'my-request',
+    name: 'My request',
     icon: Briefcase,
     subItems: [
       { id: 'service-catalog', name: 'Service Catalog', icon: ClipboardList, path: '/employee/service-catalog' },
       { id: 'canteen', name: 'Canteen', icon: Coffee, path: '/employee/canteen' },
       { id: 'guest-house', name: 'Guest House', icon: Home, path: '/employee/guest-house' },
-      { id: 'transport', name: 'Transport', icon: Bus, path: '/employee/transport' },
+      { id: 'parking-facility', name: 'Parking Facility', icon: Car, path: '/employee/parking-facility' },
+      { id: 'sports-club', name: 'Sports Club', icon: Trophy, path: '/employee/sports-club' },
       { id: 'uniform', name: 'Uniform', icon: Shirt, path: '/employee/uniform' },
       { id: 'sim-allocation', name: 'SIM Allocation', icon: Smartphone, path: '/employee/sim-allocation' },
       { id: 'asset-requests', name: 'Asset Requests', icon: Package, path: '/employee/asset-requests' },
@@ -233,21 +242,21 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                               exit={{ opacity: 0, x: -10 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <NavLink
-                                to={subItem.path}
-                                onClick={onClose}
-                                className={({ isActive }) =>
-                                  `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${
-                                    isActive
+                              <button
+                                onClick={() => {
+                                  onNavigate(subItem.id);
+                                  onClose();
+                                }}
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm w-full ${
+                                    activePage === subItem.id
                                       ? 'bg-gradient-to-r from-[#0B4DA2] to-[#042A5B] text-white shadow-md'
                                       : 'text-gray-600 hover:bg-gray-50 hover:text-[#0B4DA2]'
-                                  }`
-                                }
+                                  }`}
                                 aria-label={subItem.name}
                               >
                                 <subItem.icon size={16} strokeWidth={2.5} />
                                 <span>{subItem.name}</span>
-                              </NavLink>
+                              </button>
                             </motion.li>
                           ))}
                         </motion.ul>
