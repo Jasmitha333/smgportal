@@ -1,0 +1,30 @@
+{
+  "name": "smg-portal-backend",
+  "version": "1.0.0",
+  "description": "Backend for SMG Employee Cloud Portal",
+  "main": "functions/lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "keywords": [
+    "firebase",
+    "functions",
+    "employee-portal"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.2",
+    "typescript": "^5.9.3"
+  }
+}

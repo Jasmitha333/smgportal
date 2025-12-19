@@ -1,0 +1,180 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isSuperAdmin() {
+      return isSignedIn() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isAdminOrAbove() {
+      return isAdmin() || isSuperAdmin();
+    }
+    
+    // Valid file size (max 10MB for documents, 5MB for images)
+    function validFileSize(maxSizeMB) {
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+    
+    // Valid image type
+    function validImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Valid document type
+    function validDocumentType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('application/msword') ||
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.*') ||
+             request.resource.contentType.matches('image/.*');
+    }
+    
+    // ========================================
+    // USER AVATARS
+    // ========================================
+    match /avatars/{userId}/{fileName} {
+      // Read: Public (anyone authenticated)
+      allow read: if isSignedIn();
+      
+      // Write: Own avatar only, must be image, max 5MB
+      allow write: if isOwner(userId) && 
+                      validImageType() && 
+                      validFileSize(5);
+      
+      // Delete: Own avatar or admin
+      allow delete: if isOwner(userId) || isAdminOrAbove();
+    }
+    
+    // ========================================
+    // USER DOCUMENTS
+    // ========================================
+    match /documents/{userId}/{fileName} {
+      // Read: Owner or admin/super-admin
+      allow read: if isOwner(userId) || isAdminOrAbove();
+      
+      // Write: Owner or admin, must be valid document, max 10MB
+      allow write: if (isOwner(userId) || isAdminOrAbove()) && 
+                      validDocumentType() && 
+                      validFileSize(10);
+      
+      // Delete: Owner or super admin
+      allow delete: if isOwner(userId) || isSuperAdmin();
+    }
+    
+    // ========================================
+    // REQUEST ATTACHMENTS
+    // ========================================
+    match /requests/{requestId}/{fileName} {
+      // Read: Authenticated users (permissions checked in Firestore)
+      allow read: if isSignedIn();
+      
+      // Write: Authenticated users, max 10MB
+      allow write: if isSignedIn() && 
+                      validDocumentType() && 
+                      validFileSize(10);
+      
+      // Delete: Admin or super admin
+      allow delete: if isAdminOrAbove();
+    }
+    
+    // ========================================
+    // TRAINING MATERIALS
+    // ========================================
+    match /training/materials/{sessionId}/{fileName} {
+      // Read: All authenticated users
+      allow read: if isSignedIn();
+      
+      // Write: Admin or super admin, max 20MB
+      allow write: if isAdminOrAbove() && validFileSize(20);
+      
+      // Delete: Admin or super admin
+      allow delete: if isAdminOrAbove();
+    }
+    
+    // ========================================
+    // TRAINING CERTIFICATES
+    // ========================================
+    match /training/certificates/{userId}/{fileName} {
+      // Read: Owner or admin
+      allow read: if isOwner(userId) || isAdminOrAbove();
+      
+      // Write: Admin or super admin only (auto-generated)
+      allow write: if isAdminOrAbove() && 
+                      validDocumentType() && 
+                      validFileSize(5);
+      
+      // Delete: Super admin only
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ========================================
+    // PAYROLL DOCUMENTS (SALARY SLIPS)
+    // ========================================
+    match /payroll/{userId}/{fileName} {
+      // Read: Owner or super admin only
+      allow read: if isOwner(userId) || isSuperAdmin();
+      
+      // Write: Super admin only
+      allow write: if isSuperAdmin() && 
+                      validDocumentType() && 
+                      validFileSize(5);
+      
+      // Delete: Super admin only
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ========================================
+    // ANNOUNCEMENT ATTACHMENTS
+    // ========================================
+    match /announcements/{announcementId}/{fileName} {
+      // Read: All authenticated users
+      allow read: if isSignedIn();
+      
+      // Write: Admin or super admin, max 10MB
+      allow write: if isAdminOrAbove() && validFileSize(10);
+      
+      // Delete: Admin or super admin
+      allow delete: if isAdminOrAbove();
+    }
+    
+    // ========================================
+    // ASSET PHOTOS/DOCUMENTS
+    // ========================================
+    match /assets/{assetId}/{fileName} {
+      // Read: All authenticated users
+      allow read: if isSignedIn();
+      
+      // Write: Admin or super admin, max 5MB
+      allow write: if isAdminOrAbove() && validFileSize(5);
+      
+      // Delete: Admin or super admin
+      allow delete: if isAdminOrAbove();
+    }
+    
+    // ========================================
+    // TEMPORARY UPLOADS
+    // ========================================
+    match /temp/{userId}/{fileName} {
+      // Temporary storage for uploads before processing
+      // Auto-deleted after 24 hours (set up lifecycle rule in console)
+      
+      allow read, write: if isOwner(userId) && validFileSize(10);
+      allow delete: if isOwner(userId) || isAdminOrAbove();
+    }
+  }
+}
